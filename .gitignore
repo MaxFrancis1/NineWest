@@ -1,0 +1,21 @@
+## .NET
+bin/
+obj/
+*.user
+
+## Visual Studio
+.vs/
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## Rider
+.idea/
+
+## Supabase credentials — copy wwwroot/appsettings.example.json → wwwroot/appsettings.json and fill in your values
+wwwroot/appsettings.json
+
+## OS
+.DS_Store
+Thumbs.db

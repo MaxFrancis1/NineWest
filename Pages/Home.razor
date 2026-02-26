@@ -1,0 +1,20 @@
+﻿@page "/"
+
+<PageTitle>NineWest</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="text-center mt-5">
+            <h1>👋 Hey @context.User.Identity?.Name?.Split('@')[0]!</h1>
+            <p class="text-muted">Ready to go shopping?</p>
+            <a href="shopping-list" class="btn btn-primary btn-lg mt-2">Open Shopping List</a>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="text-center mt-5">
+            <h1>🏠 NineWest</h1>
+            <p class="text-muted">Your shared home app.</p>
+            <a href="login" class="btn btn-primary btn-lg mt-2">Sign In</a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>

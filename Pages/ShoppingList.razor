@@ -1,0 +1,213 @@
+@page "/shopping-list"
+@attribute [Authorize]
+@inject SupabaseService Supabase
+@inject SupabaseAuthStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>Shopping List — NineWest</PageTitle>
+
+<div class="shopping-wrapper">
+    <div class="shopping-header">
+        <div>
+            <h1>🛒 Shopping List</h1>
+            @if (Supabase.CurrentUser is { } user)
+            {
+                <span class="user-badge">@user.Email</span>
+            }
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="SignOut">Sign out</button>
+    </div>
+
+    <div class="add-form">
+        <input class="form-control add-name"
+               @bind="_newName"
+               @bind:event="oninput"
+               @onkeydown="HandleKeyDown"
+               placeholder="Add an item…"
+               disabled="@_adding" />
+        <input class="form-control add-qty"
+               @bind="_newQty"
+               @bind:event="oninput"
+               placeholder="Qty"
+               disabled="@_adding" />
+        <button class="btn btn-primary"
+                @onclick="AddItem"
+                disabled="@(string.IsNullOrWhiteSpace(_newName) || _adding)">
+            @if (_adding)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" />
+            }
+            else
+            {
+                <span>＋</span>
+            }
+        </button>
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger alert-dismissible mt-2">
+            @_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = null" />
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <div class="text-center mt-5">
+            <span class="spinner-border text-primary" role="status" />
+        </div>
+    }
+    else if (_items.Count == 0)
+    {
+        <div class="empty-state">
+            <span>🧺</span>
+            <p>Your list is empty — add something above!</p>
+        </div>
+    }
+    else
+    {
+        <ul class="item-list">
+            @foreach (var item in UncheckedItems)
+            {
+                <li class="list-item">
+                    <input type="checkbox" class="form-check-input item-check"
+                           checked="@item.IsChecked"
+                           @onchange="() => ToggleItem(item)" />
+                    <div class="item-info">
+                        <span class="item-name">@item.Name</span>
+                        @if (!string.IsNullOrWhiteSpace(item.Quantity))
+                        {
+                            <span class="item-qty">@item.Quantity</span>
+                        }
+                    </div>
+                    <button class="btn-delete" @onclick="() => DeleteItem(item)" title="Remove">✕</button>
+                </li>
+            }
+
+            @if (CheckedItems.Any())
+            {
+                <li class="checked-divider">
+                    <span>Checked (@CheckedItems.Count())</span>
+                    <button class="btn btn-link btn-sm text-danger p-0" @onclick="ClearChecked">Clear all</button>
+                </li>
+                @foreach (var item in CheckedItems)
+                {
+                    <li class="list-item checked">
+                        <input type="checkbox" class="form-check-input item-check"
+                               checked="@item.IsChecked"
+                               @onchange="() => ToggleItem(item)" />
+                        <div class="item-info">
+                            <span class="item-name">@item.Name</span>
+                            @if (!string.IsNullOrWhiteSpace(item.Quantity))
+                            {
+                                <span class="item-qty">@item.Quantity</span>
+                            }
+                        </div>
+                        <button class="btn-delete" @onclick="() => DeleteItem(item)" title="Remove">✕</button>
+                    </li>
+                }
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private List<ShoppingListItem> _items = [];
+    private string _newName = string.Empty;
+    private string _newQty = string.Empty;
+    private bool _loading = true;
+    private bool _adding;
+    private string? _errorMessage;
+
+    private IEnumerable<ShoppingListItem> UncheckedItems => _items.Where(i => !i.IsChecked);
+    private IEnumerable<ShoppingListItem> CheckedItems => _items.Where(i => i.IsChecked);
+
+    protected override async Task OnInitializedAsync() => await LoadItems();
+
+    private async Task LoadItems()
+    {
+        try
+        {
+            _items = await Supabase.GetShoppingListAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddItem()
+    {
+        if (string.IsNullOrWhiteSpace(_newName)) return;
+
+        _adding = true;
+        _errorMessage = null;
+
+        try
+        {
+            var item = await Supabase.AddItemAsync(_newName, _newQty);
+            if (item is not null)
+            {
+                _items.Add(item);
+                _newName = string.Empty;
+                _newQty = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _adding = false;
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await AddItem();
+    }
+
+    private async Task ToggleItem(ShoppingListItem item)
+    {
+        try
+        {
+            await Supabase.ToggleItemAsync(item);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeleteItem(ShoppingListItem item)
+    {
+        try
+        {
+            await Supabase.DeleteItemAsync(item);
+            _items.Remove(item);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task ClearChecked()
+    {
+        foreach (var item in CheckedItems.ToList())
+            await DeleteItem(item);
+    }
+
+    private async Task SignOut()
+    {
+        await Supabase.SignOutAsync();
+        AuthStateProvider.NotifyAuthStateChanged();
+        Nav.NavigateTo("/login");
+    }
+}
