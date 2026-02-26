@@ -18,7 +18,10 @@ create table if not exists public.groups (
 
 alter table public.groups enable row level security;
 
--- Authenticated users can read any group (needed to join by invite code)
+-- NOTE: This permissive SELECT policy allows any authenticated user to look up
+-- groups by invite_code (required for the join-by-code flow).  For a large-scale
+-- deployment, replace with a Supabase RPC function that accepts an invite code
+-- and returns only the matching group, then restrict SELECT to group members only.
 create policy "Authenticated users can read groups"
     on public.groups for select
     to authenticated
