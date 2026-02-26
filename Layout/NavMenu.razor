@@ -101,7 +101,7 @@ else
                         @(_isDark ? "☀️" : "🌙")
                     </button>
                     <div class="user-info">
-                        <span class="user-email">@context.User.Identity?.Name?.Split('@')[0]</span>
+                        <span class="user-email">@(context.User.Identity?.Name?.Split('@').FirstOrDefault())</span>
                     </div>
                 </div>
             </Authorized>
