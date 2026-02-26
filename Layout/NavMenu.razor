@@ -1,42 +1,131 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">NineWest</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+@inject SupabaseService Supabase
+@inject IJSRuntime JS
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+@if (BottomBar)
+{
+    <!-- Bottom tab bar for mobile -->
+    <div class="tab-bar">
         <AuthorizeView>
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="shopping-list">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Shopping List
-                    </NavLink>
-                </div>
+                <NavLink class="tab-item" href="" Match="NavLinkMatch.All">
+                    <span class="tab-icon">🏠</span>
+                    <span class="tab-label">Home</span>
+                </NavLink>
+                <NavLink class="tab-item" href="shopping-list">
+                    <span class="tab-icon">🛒</span>
+                    <span class="tab-label">Shop</span>
+                </NavLink>
+                <NavLink class="tab-item" href="recipes">
+                    <span class="tab-icon">📖</span>
+                    <span class="tab-label">Recipes</span>
+                </NavLink>
+                <NavLink class="tab-item" href="meal-plan">
+                    <span class="tab-icon">📅</span>
+                    <span class="tab-label">Meals</span>
+                </NavLink>
+                <NavLink class="tab-item" href="todos">
+                    <span class="tab-icon">✅</span>
+                    <span class="tab-label">Todos</span>
+                </NavLink>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="login">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Sign In
-                    </NavLink>
-                </div>
+                <NavLink class="tab-item" href="" Match="NavLinkMatch.All">
+                    <span class="tab-icon">🏠</span>
+                    <span class="tab-label">Home</span>
+                </NavLink>
+                <NavLink class="tab-item" href="login">
+                    <span class="tab-icon">👤</span>
+                    <span class="tab-label">Sign In</span>
+                </NavLink>
             </NotAuthorized>
         </AuthorizeView>
-    </nav>
-</div>
+    </div>
+}
+else
+{
+    <!-- Sidebar for tablet/desktop -->
+    <div class="sidebar-content">
+        <div class="sidebar-brand">
+            <span class="brand-icon">🏠</span>
+            <span class="brand-text">NineWest</span>
+        </div>
+
+        <nav class="sidebar-links">
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
+                        <span class="link-icon">🏠</span>
+                        <span>Home</span>
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="shopping-list">
+                        <span class="link-icon">🛒</span>
+                        <span>Shopping List</span>
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="recipes">
+                        <span class="link-icon">📖</span>
+                        <span>Recipes</span>
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="meal-plan">
+                        <span class="link-icon">📅</span>
+                        <span>Meal Plan</span>
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="todos">
+                        <span class="link-icon">✅</span>
+                        <span>Todos</span>
+                    </NavLink>
+
+                    <div class="sidebar-divider"></div>
+
+                    <NavLink class="sidebar-link" href="groups">
+                        <span class="link-icon">👥</span>
+                        <span>My Group</span>
+                    </NavLink>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
+                        <span class="link-icon">🏠</span>
+                        <span>Home</span>
+                    </NavLink>
+                    <NavLink class="sidebar-link" href="login">
+                        <span class="link-icon">👤</span>
+                        <span>Sign In</span>
+                    </NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
+        </nav>
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="sidebar-footer">
+                    <button class="theme-toggle" @onclick="ToggleTheme" title="Toggle theme">
+                        @(_isDark ? "☀️" : "🌙")
+                    </button>
+                    <div class="user-info">
+                        <span class="user-email">@context.User.Identity?.Name?.Split('@')[0]</span>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+}
 
 @code {
-    private bool collapseNavMenu = true;
+    [Parameter] public bool BottomBar { get; set; }
+    private bool _isDark;
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string>("themeManager.get");
+            _isDark = theme == "dark";
+            StateHasChanged();
+        }
+    }
 
-    private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+    private async Task ToggleTheme()
+    {
+        _isDark = !_isDark;
+        await JS.InvokeVoidAsync("themeManager.set", _isDark ? "dark" : "light");
+    }
 }
