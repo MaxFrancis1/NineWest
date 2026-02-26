@@ -1,0 +1,141 @@
+.rcp-page { max-width: 700px; margin: 0 auto; }
+
+.rcp-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+}
+
+.rcp-header h1 { font-size: 1.5rem; margin: 0 0 0.15rem; }
+.rcp-sub { font-size: 0.8rem; color: var(--text-secondary); }
+
+.rcp-loading { text-align: center; padding: 3rem 0; }
+
+.rcp-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-tertiary);
+}
+
+.rcp-empty-icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+.rcp-empty p { margin: 0; }
+
+/* ── Form ──── */
+.rcp-form-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.rcp-form-card h3 { font-size: 1.1rem; margin: 0 0 1rem; }
+.rcp-form-card h4 { font-size: 0.9rem; margin: 1rem 0 0.5rem; color: var(--text-secondary); }
+
+.rcp-form { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.rcp-form-row { display: flex; gap: 0.5rem; }
+.rcp-form-row .form-control { flex: 1; }
+
+.rcp-ing-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.rcp-ing-qty,
+.rcp-ing-unit { width: 70px; flex-shrink: 0; }
+
+.rcp-delete {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    padding: 0.25rem 0.4rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.rcp-delete:hover {
+    color: var(--danger);
+    background: rgba(255, 59, 48, 0.1);
+}
+
+/* ── Grid ──── */
+.rcp-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rcp-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.rcp-card:hover { box-shadow: var(--shadow-md); }
+
+.rcp-card h3 { font-size: 1.05rem; margin: 0 0 0.25rem; }
+
+.rcp-card-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem;
+}
+
+.rcp-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.rcp-meta span {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+/* ── Detail (expanded) ──── */
+.rcp-detail {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.rcp-detail h4 { font-size: 0.85rem; font-weight: 600; margin: 0 0 0.5rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+
+.rcp-ing-list {
+    padding-left: 1.25rem;
+    margin: 0 0 1rem;
+}
+
+.rcp-ing-list li {
+    font-size: 0.9rem;
+    padding: 2px 0;
+    color: var(--text-primary);
+}
+
+.rcp-instructions {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    margin: 0 0 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .rcp-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
