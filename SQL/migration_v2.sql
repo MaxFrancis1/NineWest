@@ -18,13 +18,11 @@ create table if not exists public.groups (
 
 alter table public.groups enable row level security;
 
--- Users can read groups they belong to
-create policy "Members can read their groups"
+-- Authenticated users can read any group (needed to join by invite code)
+create policy "Authenticated users can read groups"
     on public.groups for select
     to authenticated
-    using (
-        id in (select group_id from public.group_members where user_id = auth.uid())
-    );
+    using (true);
 
 -- Any authenticated user can create a group
 create policy "Authenticated users can create groups"
