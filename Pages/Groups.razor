@@ -1,0 +1,167 @@
+@page "/groups"
+@attribute [Authorize]
+@inject SupabaseService Supabase
+
+<PageTitle>My Group — NineWest</PageTitle>
+
+<div class="grp-page">
+    <div class="grp-header">
+        <h1>👥 My Group</h1>
+        <p class="grp-sub">Share lists, recipes, and plans with your partner</p>
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger">
+            @_errorMessage
+            <button type="button" class="btn-close btn-close-sm" style="float:right" @onclick="() => _errorMessage = null" />
+        </div>
+    }
+
+    @if (_successMessage is not null)
+    {
+        <div class="alert alert-success">
+            @_successMessage
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <div class="grp-loading"><span class="spinner-border text-primary" role="status" /></div>
+    }
+    else if (_groups.Count == 0)
+    {
+        <div class="grp-actions">
+            <div class="grp-action-card">
+                <h3>Create a Group</h3>
+                <p>Start a new household group and invite your partner.</p>
+                <div class="grp-action-form">
+                    <input class="form-control" @bind="_newGroupName" placeholder="Group name (e.g. Our Home)" />
+                    <button class="btn btn-primary" @onclick="CreateGroup"
+                            disabled="@(string.IsNullOrWhiteSpace(_newGroupName) || _saving)">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1" role="status" /> }
+                        Create
+                    </button>
+                </div>
+            </div>
+
+            <div class="grp-or">or</div>
+
+            <div class="grp-action-card">
+                <h3>Join a Group</h3>
+                <p>Got an invite code? Enter it here to join.</p>
+                <div class="grp-action-form">
+                    <input class="form-control" @bind="_inviteCode" placeholder="Invite code" />
+                    <button class="btn btn-primary" @onclick="JoinGroup"
+                            disabled="@(string.IsNullOrWhiteSpace(_inviteCode) || _saving)">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1" role="status" /> }
+                        Join
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @foreach (var group in _groups)
+        {
+            <div class="grp-card">
+                <div class="grp-card-header">
+                    <h2>@group.Name</h2>
+                    <span class="grp-since">Since @group.CreatedAt.ToString("MMM yyyy")</span>
+                </div>
+
+                <div class="grp-invite">
+                    <span class="grp-invite-label">Invite Code</span>
+                    <div class="grp-invite-code">
+                        <code>@group.InviteCode</code>
+                        <span class="grp-invite-hint">Share this with your partner so they can join</span>
+                    </div>
+                </div>
+
+                <div class="grp-members">
+                    <h4>Members (@_members.Count)</h4>
+                    @foreach (var m in _members)
+                    {
+                        <div class="grp-member">
+                            <span class="grp-member-icon">👤</span>
+                            <span class="grp-member-id">@m.UserId[..8]…</span>
+                            <span class="grp-member-role @(m.Role == "owner" ? "grp-owner" : "")">@m.Role</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Group> _groups = [];
+    private List<GroupMember> _members = [];
+    private bool _loading = true;
+    private bool _saving;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private string _newGroupName = string.Empty;
+    private string _inviteCode = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _groups = await Supabase.GetMyGroupsAsync();
+            if (_groups.Count > 0)
+                _members = await Supabase.GetGroupMembersAsync(_groups[0].Id);
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _loading = false; }
+    }
+
+    private async Task CreateGroup()
+    {
+        if (string.IsNullOrWhiteSpace(_newGroupName)) return;
+        _saving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var group = await Supabase.CreateGroupAsync(_newGroupName);
+            if (group is not null)
+            {
+                _groups.Add(group);
+                _members = await Supabase.GetGroupMembersAsync(group.Id);
+                _successMessage = "Group created! Share the invite code with your partner.";
+                _newGroupName = string.Empty;
+            }
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task JoinGroup()
+    {
+        if (string.IsNullOrWhiteSpace(_inviteCode)) return;
+        _saving = true;
+        _errorMessage = null;
+        _successMessage = null;
+
+        try
+        {
+            var group = await Supabase.JoinGroupAsync(_inviteCode);
+            if (group is not null)
+            {
+                _groups.Add(group);
+                _members = await Supabase.GetGroupMembersAsync(group.Id);
+                _successMessage = $"Joined '{group.Name}' successfully!";
+                _inviteCode = string.Empty;
+            }
+            else
+            {
+                _errorMessage = "No group found with that invite code.";
+            }
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _saving = false; }
+    }
+}
