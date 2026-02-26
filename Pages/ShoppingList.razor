@@ -6,31 +6,28 @@
 
 <PageTitle>Shopping List — NineWest</PageTitle>
 
-<div class="shopping-wrapper">
-    <div class="shopping-header">
+<div class="sl-page">
+    <div class="sl-header">
         <div>
             <h1>🛒 Shopping List</h1>
-            @if (Supabase.CurrentUser is { } user)
-            {
-                <span class="user-badge">@user.Email</span>
-            }
+            <span class="sl-sub">@_items.Count item@(_items.Count != 1 ? "s" : "")</span>
         </div>
         <button class="btn btn-outline-secondary btn-sm" @onclick="SignOut">Sign out</button>
     </div>
 
-    <div class="add-form">
-        <input class="form-control add-name"
+    <div class="sl-add">
+        <input class="form-control sl-input"
                @bind="_newName"
                @bind:event="oninput"
                @onkeydown="HandleKeyDown"
                placeholder="Add an item…"
                disabled="@_adding" />
-        <input class="form-control add-qty"
+        <input class="form-control sl-qty"
                @bind="_newQty"
                @bind:event="oninput"
                placeholder="Qty"
                disabled="@_adding" />
-        <button class="btn btn-primary"
+        <button class="btn btn-primary sl-btn"
                 @onclick="AddItem"
                 disabled="@(string.IsNullOrWhiteSpace(_newName) || _adding)">
             @if (_adding)
@@ -46,65 +43,65 @@
 
     @if (_errorMessage is not null)
     {
-        <div class="alert alert-danger alert-dismissible mt-2">
+        <div class="alert alert-danger mt-2">
             @_errorMessage
-            <button type="button" class="btn-close" @onclick="() => _errorMessage = null" />
+            <button type="button" class="btn-close btn-close-sm sl-alert-close" @onclick="() => _errorMessage = null" />
         </div>
     }
 
     @if (_loading)
     {
-        <div class="text-center mt-5">
+        <div class="sl-loading">
             <span class="spinner-border text-primary" role="status" />
         </div>
     }
     else if (_items.Count == 0)
     {
-        <div class="empty-state">
-            <span>🧺</span>
+        <div class="sl-empty">
+            <span class="sl-empty-icon">🧺</span>
             <p>Your list is empty — add something above!</p>
         </div>
     }
     else
     {
-        <ul class="item-list">
+        <ul class="sl-list">
             @foreach (var item in UncheckedItems)
             {
-                <li class="list-item">
-                    <input type="checkbox" class="form-check-input item-check"
+                <li class="sl-item">
+                    <input type="checkbox" class="form-check-input sl-check"
                            checked="@item.IsChecked"
                            @onchange="() => ToggleItem(item)" />
-                    <div class="item-info">
-                        <span class="item-name">@item.Name</span>
+                    <div class="sl-item-info">
+                        <span class="sl-item-name">@item.Name</span>
                         @if (!string.IsNullOrWhiteSpace(item.Quantity))
                         {
-                            <span class="item-qty">@item.Quantity</span>
+                            <span class="sl-item-qty">@item.Quantity</span>
                         }
                     </div>
-                    <button class="btn-delete" @onclick="() => DeleteItem(item)" title="Remove">✕</button>
+                    <button class="sl-delete" @onclick="() => DeleteItem(item)" title="Remove">✕</button>
                 </li>
             }
 
             @if (CheckedItems.Any())
             {
-                <li class="checked-divider">
+                <li class="sl-divider">
                     <span>Checked (@CheckedItems.Count())</span>
-                    <button class="btn btn-link btn-sm text-danger p-0" @onclick="ClearChecked">Clear all</button>
+                    <button class="btn btn-link btn-sm p-0 sl-clear-btn" @onclick="ClearChecked">Clear all</button>
                 </li>
                 @foreach (var item in CheckedItems)
                 {
-                    <li class="list-item checked">
-                        <input type="checkbox" class="form-check-input item-check"
+                    <li class="sl-item sl-checked">
+                        <input type="checkbox" class="form-check-input sl-check"
                                checked="@item.IsChecked"
                                @onchange="() => ToggleItem(item)" />
-                        <div class="item-info">
-                            <span class="item-name">@item.Name</span>
+                        <div class="sl-item-info">
+                            <span class="sl-item-name">@item.Name</span>
                             @if (!string.IsNullOrWhiteSpace(item.Quantity))
                             {
-                                <span class="item-qty">@item.Quantity</span>
+                                <span class="sl-item-qty">@item.Quantity</span>
                             }
                         </div>
-                        <button class="btn-delete" @onclick="() => DeleteItem(item)" title="Remove">✕</button>
+                        <button class="sl-delete" @onclick="() => DeleteItem(item)" title="Remove">✕</button>
                     </li>
                 }
             }
