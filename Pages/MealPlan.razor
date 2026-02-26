@@ -1,0 +1,224 @@
+@page "/meal-plan"
+@attribute [Authorize]
+@inject SupabaseService Supabase
+
+<PageTitle>Meal Plan — NineWest</PageTitle>
+
+<div class="mp-page">
+    <div class="mp-header">
+        <div>
+            <h1>📅 Meal Plan</h1>
+            <span class="mp-sub">@_weekStart.ToString("MMM d") – @_weekEnd.ToString("MMM d, yyyy")</span>
+        </div>
+        <div class="mp-nav">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="PrevWeek">◀</button>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="GoToday">Today</button>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="NextWeek">▶</button>
+        </div>
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger mt-2">
+            @_errorMessage
+            <button type="button" class="btn-close btn-close-sm" style="float:right" @onclick="() => _errorMessage = null" />
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <div class="mp-loading"><span class="spinner-border text-primary" role="status" /></div>
+    }
+    else
+    {
+        <div class="mp-week">
+            @for (int d = 0; d < 7; d++)
+            {
+                var day = _weekStart.AddDays(d);
+                var isToday = day.Date == DateTime.Today;
+                <div class="mp-day @(isToday ? "mp-today" : "")">
+                    <div class="mp-day-header">
+                        <span class="mp-day-name">@day.ToString("ddd")</span>
+                        <span class="mp-day-date">@day.ToString("MMM d")</span>
+                    </div>
+
+                    @foreach (var mealType in _mealTypes)
+                    {
+                        var entries = GetEntries(day, mealType);
+                        <div class="mp-slot">
+                            <span class="mp-slot-label">@FormatMealType(mealType)</span>
+                            @foreach (var entry in entries)
+                            {
+                                <div class="mp-entry">
+                                    <span class="mp-entry-title">@(entry.CustomTitle ?? "Recipe")</span>
+                                    <button class="mp-entry-del" @onclick="() => DeleteEntry(entry)">✕</button>
+                                </div>
+                            }
+                            <button class="mp-add-btn" @onclick="() => OpenAddModal(day, mealType)">＋</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (_showModal)
+    {
+        <div class="mp-modal-bg" @onclick="CloseModal">
+            <div class="mp-modal" @onclick:stopPropagation="true">
+                <h3>Add Meal</h3>
+                <p class="mp-modal-sub">@_modalDate.ToString("ddd, MMM d") · @FormatMealType(_modalMealType)</p>
+
+                <div class="mb-3">
+                    <label class="form-label">Meal Name</label>
+                    <input class="form-control" @bind="_modalTitle" placeholder="e.g. Pasta Bolognese" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Notes (optional)</label>
+                    <input class="form-control" @bind="_modalNotes" placeholder="Any notes..." />
+                </div>
+
+                @if (_recipes.Any())
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Or pick a recipe</label>
+                        <select class="form-select" @onchange="OnRecipeSelected">
+                            <option value="">— None —</option>
+                            @foreach (var r in _recipes)
+                            {
+                                <option value="@r.Id">@r.Title</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary flex-fill" @onclick="SaveEntry"
+                            disabled="@(string.IsNullOrWhiteSpace(_modalTitle) || _saving)">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1" role="status" /> }
+                        Add
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="CloseModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<MealPlanEntry> _entries = [];
+    private List<Recipe> _recipes = [];
+    private DateTime _weekStart;
+    private DateTime _weekEnd;
+    private bool _loading = true;
+    private bool _saving;
+    private string? _errorMessage;
+    private readonly string[] _mealTypes = ["breakfast", "lunch", "dinner"];
+
+    // Modal
+    private bool _showModal;
+    private DateTime _modalDate;
+    private string _modalMealType = "lunch";
+    private string _modalTitle = string.Empty;
+    private string? _modalNotes;
+    private string? _modalRecipeId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SetWeek(DateTime.Today);
+        await LoadData();
+    }
+
+    private void SetWeek(DateTime date)
+    {
+        int diff = ((int)date.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+        _weekStart = date.AddDays(-diff).Date;
+        _weekEnd = _weekStart.AddDays(6).Date;
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        try
+        {
+            _entries = await Supabase.GetMealPlanAsync(_weekStart, _weekEnd);
+            _recipes = await Supabase.GetRecipesAsync();
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _loading = false; }
+    }
+
+    private async Task PrevWeek() { SetWeek(_weekStart.AddDays(-7)); await LoadData(); }
+    private async Task NextWeek() { SetWeek(_weekStart.AddDays(7)); await LoadData(); }
+    private async Task GoToday() { SetWeek(DateTime.Today); await LoadData(); }
+
+    private List<MealPlanEntry> GetEntries(DateTime day, string mealType) =>
+        _entries.Where(e => e.MealDate.Date == day.Date && e.MealType == mealType).ToList();
+
+    private static string FormatMealType(string t) => t switch
+    {
+        "breakfast" => "🌅 Breakfast",
+        "lunch" => "☀️ Lunch",
+        "dinner" => "🌙 Dinner",
+        _ => t
+    };
+
+    private void OpenAddModal(DateTime day, string mealType)
+    {
+        _modalDate = day;
+        _modalMealType = mealType;
+        _modalTitle = string.Empty;
+        _modalNotes = null;
+        _modalRecipeId = null;
+        _showModal = true;
+    }
+
+    private void CloseModal() => _showModal = false;
+
+    private void OnRecipeSelected(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString();
+        _modalRecipeId = string.IsNullOrWhiteSpace(id) ? null : id;
+        if (_modalRecipeId is not null)
+        {
+            var recipe = _recipes.FirstOrDefault(r => r.Id == _modalRecipeId);
+            if (recipe is not null) _modalTitle = recipe.Title;
+        }
+    }
+
+    private async Task SaveEntry()
+    {
+        if (string.IsNullOrWhiteSpace(_modalTitle)) return;
+        _saving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var entry = new MealPlanEntry
+            {
+                MealDate = _modalDate,
+                MealType = _modalMealType,
+                CustomTitle = _modalTitle.Trim(),
+                Notes = _modalNotes?.Trim(),
+                RecipeId = _modalRecipeId
+            };
+
+            var saved = await Supabase.AddMealPlanEntryAsync(entry);
+            if (saved is not null) _entries.Add(saved);
+            CloseModal();
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private async Task DeleteEntry(MealPlanEntry entry)
+    {
+        try
+        {
+            await Supabase.DeleteMealPlanEntryAsync(entry);
+            _entries.Remove(entry);
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+    }
+}
