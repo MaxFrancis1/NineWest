@@ -1,0 +1,187 @@
+@page "/todos"
+@attribute [Authorize]
+@inject SupabaseService Supabase
+
+<PageTitle>To-Do List — NineWest</PageTitle>
+
+<div class="td-page">
+    <div class="td-header">
+        <div>
+            <h1>✅ To-Do List</h1>
+            <span class="td-sub">@ActiveItems.Count() remaining</span>
+        </div>
+    </div>
+
+    <div class="td-add">
+        <input class="form-control td-input"
+               @bind="_newTitle"
+               @bind:event="oninput"
+               @onkeydown="HandleKeyDown"
+               placeholder="Add a task…"
+               disabled="@_adding" />
+        <select class="form-select td-priority" @bind="_newPriority">
+            <option value="0">—</option>
+            <option value="1">Low</option>
+            <option value="2">Med</option>
+            <option value="3">High</option>
+        </select>
+        <input class="form-control td-date" type="date" @bind="_newDueDate" />
+        <button class="btn btn-primary td-btn"
+                @onclick="AddTodo"
+                disabled="@(string.IsNullOrWhiteSpace(_newTitle) || _adding)">
+            @if (_adding)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" />
+            }
+            else
+            {
+                <span>＋</span>
+            }
+        </button>
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger mt-2">
+            @_errorMessage
+            <button type="button" class="btn-close btn-close-sm" style="float:right" @onclick="() => _errorMessage = null" />
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <div class="td-loading"><span class="spinner-border text-primary" role="status" /></div>
+    }
+    else if (_items.Count == 0)
+    {
+        <div class="td-empty">
+            <span class="td-empty-icon">🎉</span>
+            <p>Nothing to do — enjoy the free time!</p>
+        </div>
+    }
+    else
+    {
+        <ul class="td-list">
+            @foreach (var item in ActiveItems)
+            {
+                <li class="td-item">
+                    <input type="checkbox" class="form-check-input td-check"
+                           checked="@item.IsCompleted"
+                           @onchange="() => ToggleTodo(item)" />
+                    <div class="td-item-body">
+                        <span class="td-item-title">@item.Title</span>
+                        <div class="td-item-meta">
+                            @if (item.Priority > 0)
+                            {
+                                <span class="td-badge td-p@(item.Priority)">@PriorityLabel(item.Priority)</span>
+                            }
+                            @if (item.DueDate.HasValue)
+                            {
+                                <span class="td-due @(item.DueDate.Value.Date < DateTime.Today ? "td-overdue" : "")">
+                                    📆 @item.DueDate.Value.ToString("MMM d")
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <button class="td-delete" @onclick="() => DeleteTodo(item)" title="Remove">✕</button>
+                </li>
+            }
+
+            @if (CompletedItems.Any())
+            {
+                <li class="td-divider">
+                    <span>Done (@CompletedItems.Count())</span>
+                    <button class="btn btn-link btn-sm p-0" style="color: var(--danger); text-decoration: none; font-size: .78rem;" @onclick="ClearCompleted">Clear</button>
+                </li>
+                @foreach (var item in CompletedItems)
+                {
+                    <li class="td-item td-done">
+                        <input type="checkbox" class="form-check-input td-check"
+                               checked="@item.IsCompleted"
+                               @onchange="() => ToggleTodo(item)" />
+                        <div class="td-item-body">
+                            <span class="td-item-title">@item.Title</span>
+                        </div>
+                        <button class="td-delete" @onclick="() => DeleteTodo(item)" title="Remove">✕</button>
+                    </li>
+                }
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private List<TodoItem> _items = [];
+    private string _newTitle = string.Empty;
+    private int _newPriority;
+    private DateTime? _newDueDate;
+    private bool _loading = true;
+    private bool _adding;
+    private string? _errorMessage;
+
+    private IEnumerable<TodoItem> ActiveItems => _items.Where(i => !i.IsCompleted);
+    private IEnumerable<TodoItem> CompletedItems => _items.Where(i => i.IsCompleted);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _items = await Supabase.GetTodosAsync(); }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _loading = false; }
+    }
+
+    private async Task AddTodo()
+    {
+        if (string.IsNullOrWhiteSpace(_newTitle)) return;
+        _adding = true;
+        _errorMessage = null;
+
+        try
+        {
+            var item = await Supabase.AddTodoAsync(_newTitle, _newPriority, _newDueDate);
+            if (item is not null)
+            {
+                _items.Insert(0, item);
+                _newTitle = string.Empty;
+                _newPriority = 0;
+                _newDueDate = null;
+            }
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _adding = false; }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await AddTodo();
+    }
+
+    private async Task ToggleTodo(TodoItem item)
+    {
+        try { await Supabase.ToggleTodoAsync(item); }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+    }
+
+    private async Task DeleteTodo(TodoItem item)
+    {
+        try
+        {
+            await Supabase.DeleteTodoAsync(item);
+            _items.Remove(item);
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+    }
+
+    private async Task ClearCompleted()
+    {
+        foreach (var item in CompletedItems.ToList())
+            await DeleteTodo(item);
+    }
+
+    private static string PriorityLabel(int p) => p switch
+    {
+        1 => "Low",
+        2 => "Med",
+        3 => "High",
+        _ => ""
+    };
+}
