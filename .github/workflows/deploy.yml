@@ -25,6 +25,7 @@ jobs:
 
       - name: Fix for GitHub Pages
         run: |
+          sed -i 's|<base href="/" />|<base href="/NineWest/" />|g' release/wwwroot/index.html
           touch release/wwwroot/.nojekyll
           cp release/wwwroot/index.html release/wwwroot/404.html
 
