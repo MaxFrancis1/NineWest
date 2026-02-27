@@ -46,6 +46,25 @@ create policy "Group owner can delete"
     using (created_by = auth.uid());
 
 -- -----------------------------------------------
+-- 1b. Helper function — breaks RLS recursion
+-- All group-scoped policies use this instead of
+-- directly subquerying group_members, which would
+-- trigger the policy on group_members itself and
+-- cause infinite recursion (error code 42P17).
+-- -----------------------------------------------
+create or replace function public.get_my_group_ids()
+returns setof uuid
+language sql
+security definer   -- runs as table owner, bypasses RLS
+stable
+set search_path = public
+as $$
+    select group_id
+    from   public.group_members
+    where  user_id = auth.uid();
+$$;
+
+-- -----------------------------------------------
 -- 2. group_members — Link users to groups (M:N)
 -- -----------------------------------------------
 create table if not exists public.group_members (
@@ -60,11 +79,12 @@ create table if not exists public.group_members (
 alter table public.group_members enable row level security;
 
 -- Users can see members of groups they belong to
+-- Uses get_my_group_ids() to avoid self-referencing recursion (42P17)
 create policy "Members can read group members"
     on public.group_members for select
     to authenticated
     using (
-        group_id in (select group_id from public.group_members where user_id = auth.uid())
+        group_id in (select public.get_my_group_ids())
     );
 
 -- Users can join groups (insert themselves)
@@ -109,7 +129,7 @@ create policy "Users can read own or group recipes"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can insert recipes"
@@ -119,7 +139,7 @@ create policy "Users can insert recipes"
         auth.uid() = created_by
         and (
             group_id is null
-            or group_id in (select group_id from public.group_members where user_id = auth.uid())
+            or group_id in (select public.get_my_group_ids())
         )
     );
 
@@ -128,7 +148,7 @@ create policy "Users can update own or group recipes"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can delete own or group recipes"
@@ -136,7 +156,7 @@ create policy "Users can delete own or group recipes"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 -- Indexes
@@ -164,8 +184,8 @@ create policy "Users can read recipe ingredients"
     using (
         recipe_id in (
             select r.id from public.recipes r
-            where r.created_by = auth.uid()
-               or r.group_id in (select gm.group_id from public.group_members gm where gm.user_id = auth.uid())
+            where  r.created_by = auth.uid()
+            or     r.group_id   in (select public.get_my_group_ids())
         )
     );
 
@@ -175,8 +195,8 @@ create policy "Users can insert recipe ingredients"
     with check (
         recipe_id in (
             select r.id from public.recipes r
-            where r.created_by = auth.uid()
-               or r.group_id in (select gm.group_id from public.group_members gm where gm.user_id = auth.uid())
+            where  r.created_by = auth.uid()
+            or     r.group_id   in (select public.get_my_group_ids())
         )
     );
 
@@ -186,8 +206,8 @@ create policy "Users can update recipe ingredients"
     using (
         recipe_id in (
             select r.id from public.recipes r
-            where r.created_by = auth.uid()
-               or r.group_id in (select gm.group_id from public.group_members gm where gm.user_id = auth.uid())
+            where  r.created_by = auth.uid()
+            or     r.group_id   in (select public.get_my_group_ids())
         )
     );
 
@@ -197,8 +217,8 @@ create policy "Users can delete recipe ingredients"
     using (
         recipe_id in (
             select r.id from public.recipes r
-            where r.created_by = auth.uid()
-               or r.group_id in (select gm.group_id from public.group_members gm where gm.user_id = auth.uid())
+            where  r.created_by = auth.uid()
+            or     r.group_id   in (select public.get_my_group_ids())
         )
     );
 
@@ -227,7 +247,7 @@ create policy "Users can read own or group meal plans"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can insert meal plans"
@@ -237,7 +257,7 @@ create policy "Users can insert meal plans"
         auth.uid() = created_by
         and (
             group_id is null
-            or group_id in (select group_id from public.group_members where user_id = auth.uid())
+            or group_id in (select public.get_my_group_ids())
         )
     );
 
@@ -246,7 +266,7 @@ create policy "Users can update own or group meal plans"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can delete own or group meal plans"
@@ -254,7 +274,7 @@ create policy "Users can delete own or group meal plans"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 -- Indexes
@@ -284,7 +304,7 @@ create policy "Users can read own or group todos"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can insert todos"
@@ -294,7 +314,7 @@ create policy "Users can insert todos"
         auth.uid() = created_by
         and (
             group_id is null
-            or group_id in (select group_id from public.group_members where user_id = auth.uid())
+            or group_id in (select public.get_my_group_ids())
         )
     );
 
@@ -303,7 +323,7 @@ create policy "Users can update own or group todos"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can delete own or group todos"
@@ -311,7 +331,7 @@ create policy "Users can delete own or group todos"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 -- Indexes
@@ -340,7 +360,7 @@ create policy "Users can read own or group shopping items"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can insert shopping items"
@@ -350,7 +370,7 @@ create policy "Users can insert shopping items"
         auth.uid() = created_by
         and (
             group_id is null
-            or group_id in (select group_id from public.group_members where user_id = auth.uid())
+            or group_id in (select public.get_my_group_ids())
         )
     );
 
@@ -359,7 +379,7 @@ create policy "Users can update own or group shopping items"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
 
 create policy "Users can delete own or group shopping items"
@@ -367,5 +387,5 @@ create policy "Users can delete own or group shopping items"
     to authenticated
     using (
         created_by = auth.uid()
-        or group_id in (select group_id from public.group_members where user_id = auth.uid())
+        or group_id in (select public.get_my_group_ids())
     );
