@@ -1,4 +1,4 @@
-@page "/login"
+@page "/NineWest/login"
 @inject SupabaseService Supabase
 @inject SupabaseAuthStateProvider AuthStateProvider
 @inject NavigationManager Nav
@@ -82,7 +82,7 @@
     protected override void OnInitialized()
     {
         if (Supabase.IsAuthenticated)
-            Nav.NavigateTo("/shopping-list");
+            Nav.NavigateTo("/ninewest/shopping-list");
     }
 
     private async Task HandleSubmit()
@@ -103,7 +103,7 @@
                 if (session is not null)
                 {
                     AuthStateProvider.NotifyAuthStateChanged();
-                    Nav.NavigateTo("/shopping-list");
+                    Nav.NavigateTo("/ninewest/shopping-list");
                 }
             }
         }
