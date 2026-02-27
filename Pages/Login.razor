@@ -81,8 +81,8 @@
 
     protected override void OnInitialized()
     {
-        if (Supabase.IsAuthenticated)
-            Nav.NavigateTo("/shopping-list");
+        // if (Supabase.IsAuthenticated)
+        //     Nav.NavigateTo("/shopping-list");
     }
 
     private async Task HandleSubmit()
@@ -103,7 +103,7 @@
                 if (session is not null)
                 {
                     AuthStateProvider.NotifyAuthStateChanged();
-                    Nav.NavigateTo("/shopping-list");
+                    // Nav.NavigateTo("/shopping-list");
                 }
             }
         }
