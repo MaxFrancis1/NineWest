@@ -1,0 +1,147 @@
+/* ── Dashboard (Authenticated) ──────────────────────── */
+.dashboard {
+    padding: 0.5rem 0;
+}
+
+.dash-greeting h1 {
+    font-size: 1.75rem;
+    margin: 0 0 0.25rem;
+}
+
+.text-sub {
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+}
+
+.dash-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.dash-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.dash-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.dash-card-icon {
+    font-size: 2rem;
+}
+
+.dash-card-body h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.15rem;
+}
+
+.dash-card-body p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* ── Landing (Not Authenticated) ────────────────────── */
+.landing {
+    padding: 2rem 0;
+}
+
+.landing-hero {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.landing-icon {
+    font-size: 3.5rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.landing-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.03em;
+}
+
+.landing-sub {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0 0 2rem;
+}
+
+.landing-cta {
+    padding: 0.75rem 2.5rem;
+    font-size: 1.05rem;
+    border-radius: var(--radius-md);
+}
+
+.landing-features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    padding: 0 0.5rem;
+}
+
+.feature-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.feature-card span {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.feature-card p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+    .dash-greeting h1 {
+        font-size: 2rem;
+    }
+
+    .dash-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+
+    .landing-features {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+}

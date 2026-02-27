@@ -1,16 +1,32 @@
-﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+
+<div class="app-shell @(_isDark ? "theme-dark" : "")">
+    <aside class="sidebar-nav">
         <NavMenu />
-    </div>
+    </aside>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+    <main class="main-content">
+        <article class="page-content">
             @Body
         </article>
     </main>
+
+    <nav class="bottom-nav">
+        <NavMenu BottomBar="true" />
+    </nav>
 </div>
+
+@code {
+    private bool _isDark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string>("themeManager.get");
+            _isDark = theme == "dark";
+            StateHasChanged();
+        }
+    }
+}

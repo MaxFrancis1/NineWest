@@ -1,64 +1,40 @@
-.sl-page {
-    max-width: 600px;
-    margin: 0 auto;
-}
+.td-page { max-width: 600px; margin: 0 auto; }
 
-.sl-header {
+.td-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     margin-bottom: 1.25rem;
-    gap: 1rem;
 }
 
-.sl-header h1 {
-    font-size: 1.5rem;
-    margin: 0 0 0.15rem;
-}
+.td-header h1 { font-size: 1.5rem; margin: 0 0 0.15rem; }
+.td-sub { font-size: 0.8rem; color: var(--text-secondary); }
 
-.sl-sub {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-.sl-add {
+.td-add {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
-.sl-input { flex: 1; }
+.td-input { flex: 1; min-width: 150px; }
+.td-priority { width: 80px; flex-shrink: 0; }
+.td-date { width: 140px; flex-shrink: 0; }
+.td-btn { flex-shrink: 0; padding: 0 0.85rem; }
 
-.sl-qty {
-    width: 72px;
-    flex-shrink: 0;
-}
+.td-loading { text-align: center; padding: 3rem 0; }
 
-.sl-btn {
-    flex-shrink: 0;
-    padding: 0 0.85rem;
-}
-
-.sl-loading {
-    text-align: center;
-    padding: 3rem 0;
-}
-
-.sl-empty {
+.td-empty {
     text-align: center;
     padding: 3rem 1rem;
     color: var(--text-tertiary);
 }
 
-.sl-empty-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: 0.75rem;
-}
+.td-empty-icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+.td-empty p { margin: 0; }
 
-.sl-empty p { margin: 0; }
-
-.sl-list {
+/* ── List ──── */
+.td-list {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -69,7 +45,7 @@
     box-shadow: var(--shadow-sm);
 }
 
-.sl-item {
+.td-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -78,53 +54,65 @@
     transition: background 0.15s ease;
 }
 
-.sl-item:last-child { border-bottom: none; }
+.td-item:last-child { border-bottom: none; }
+.td-item:hover { background: var(--bg-surface-hover); }
 
-.sl-item:hover { background: var(--bg-surface-hover); }
-
-.sl-check {
+.td-check {
     flex-shrink: 0;
     width: 1.15rem;
     height: 1.15rem;
     cursor: pointer;
 }
 
-.sl-item-info {
+.td-item-body {
     flex: 1;
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
     min-width: 0;
 }
 
-.sl-item-name {
+.td-item-title {
     font-size: 0.95rem;
+    display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.sl-item-qty {
-    font-size: 0.78rem;
-    white-space: nowrap;
-    flex-shrink: 0;
-    background: var(--accent-light);
-    color: var(--accent);
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-weight: 500;
+.td-item-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.2rem;
+    flex-wrap: wrap;
 }
 
-.sl-checked .sl-item-name {
+.td-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.td-p1 { background: rgba(52, 199, 89, 0.12); color: var(--success); }
+.td-p2 { background: rgba(255, 149, 0, 0.12); color: var(--warning); }
+.td-p3 { background: rgba(255, 59, 48, 0.12); color: var(--danger); }
+
+.td-due {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.td-overdue {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.td-done .td-item-title {
     text-decoration: line-through;
     color: var(--text-tertiary);
 }
 
-.sl-checked .sl-item-qty {
-    opacity: 0.5;
-}
-
-.sl-delete {
+.td-delete {
     background: none;
     border: none;
     color: var(--text-tertiary);
@@ -136,12 +124,12 @@
     flex-shrink: 0;
 }
 
-.sl-delete:hover {
+.td-delete:hover {
     color: var(--danger);
     background: rgba(255, 59, 48, 0.1);
 }
 
-.sl-divider {
+.td-divider {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -155,12 +143,7 @@
     border-bottom: 1px solid var(--border-light);
 }
 
-.sl-alert-close {
-    float: right;
-}
-
-.sl-clear-btn {
-    color: var(--danger);
-    text-decoration: none;
-    font-size: 0.8rem;
+@media (max-width: 480px) {
+    .td-add { flex-wrap: wrap; }
+    .td-date { width: 100%; }
 }

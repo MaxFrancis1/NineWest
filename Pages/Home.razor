@@ -1,20 +1,88 @@
-﻿@page "/"
+@page "/"
 
 <PageTitle>NineWest</PageTitle>
 
 <AuthorizeView>
     <Authorized>
-        <div class="text-center mt-5">
-            <h1>👋 Hey @context.User.Identity?.Name?.Split('@')[0]!</h1>
-            <p class="text-muted">Ready to go shopping?</p>
-            <a href="shopping-list" class="btn btn-primary btn-lg mt-2">Open Shopping List</a>
+        <div class="dashboard">
+            <div class="dash-greeting">
+                <h1>Hey @context.User.Identity?.Name?.Split('@')[0] 👋</h1>
+                <p class="text-sub">What's on the agenda today?</p>
+            </div>
+
+            <div class="dash-grid">
+                <a href="shopping-list" class="dash-card">
+                    <span class="dash-card-icon">🛒</span>
+                    <div class="dash-card-body">
+                        <h3>Shopping List</h3>
+                        <p>Add &amp; manage items</p>
+                    </div>
+                </a>
+
+                <a href="recipes" class="dash-card">
+                    <span class="dash-card-icon">📖</span>
+                    <div class="dash-card-body">
+                        <h3>Recipes</h3>
+                        <p>Save your favourites</p>
+                    </div>
+                </a>
+
+                <a href="meal-plan" class="dash-card">
+                    <span class="dash-card-icon">📅</span>
+                    <div class="dash-card-body">
+                        <h3>Meal Plan</h3>
+                        <p>Plan the week ahead</p>
+                    </div>
+                </a>
+
+                <a href="todos" class="dash-card">
+                    <span class="dash-card-icon">✅</span>
+                    <div class="dash-card-body">
+                        <h3>To-Do List</h3>
+                        <p>Stay on top of tasks</p>
+                    </div>
+                </a>
+
+                <a href="groups" class="dash-card">
+                    <span class="dash-card-icon">👥</span>
+                    <div class="dash-card-body">
+                        <h3>My Group</h3>
+                        <p>Share with your partner</p>
+                    </div>
+                </a>
+            </div>
         </div>
     </Authorized>
     <NotAuthorized>
-        <div class="text-center mt-5">
-            <h1>🏠 NineWest</h1>
-            <p class="text-muted">Your shared home app.</p>
-            <a href="login" class="btn btn-primary btn-lg mt-2">Sign In</a>
+        <div class="landing">
+            <div class="landing-hero">
+                <span class="landing-icon">🏠</span>
+                <h1>NineWest</h1>
+                <p class="landing-sub">Your shared home, organised.</p>
+                <a href="login" class="btn btn-primary btn-lg landing-cta">Get Started</a>
+            </div>
+            <div class="landing-features">
+                <div class="feature-card">
+                    <span>🛒</span>
+                    <h4>Shopping Lists</h4>
+                    <p>Shared lists that update in real-time</p>
+                </div>
+                <div class="feature-card">
+                    <span>📖</span>
+                    <h4>Recipes</h4>
+                    <p>Save &amp; organise your favourite meals</p>
+                </div>
+                <div class="feature-card">
+                    <span>📅</span>
+                    <h4>Meal Planning</h4>
+                    <p>Plan your week and eat well</p>
+                </div>
+                <div class="feature-card">
+                    <span>✅</span>
+                    <h4>To-Do Lists</h4>
+                    <p>Keep track of everything together</p>
+                </div>
+            </div>
         </div>
     </NotAuthorized>
 </AuthorizeView>

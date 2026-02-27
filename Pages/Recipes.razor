@@ -1,0 +1,243 @@
+@page "/recipes"
+@attribute [Authorize]
+@inject SupabaseService Supabase
+
+<PageTitle>Recipes — NineWest</PageTitle>
+
+<div class="rcp-page">
+    <div class="rcp-header">
+        <div>
+            <h1>📖 Recipes</h1>
+            <span class="rcp-sub">@_recipes.Count recipe@(_recipes.Count != 1 ? "s" : "")</span>
+        </div>
+        <button class="btn btn-primary btn-sm" @onclick="() => _showForm = !_showForm">
+            @(_showForm ? "Cancel" : "＋ New Recipe")
+        </button>
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger mt-2">
+            @_errorMessage
+            <button type="button" class="btn-close btn-close-sm" style="float:right" @onclick="() => _errorMessage = null" />
+        </div>
+    }
+
+    @if (_showForm)
+    {
+        <div class="rcp-form-card">
+            <h3>New Recipe</h3>
+            <div class="rcp-form">
+                <input class="form-control" @bind="_newTitle" placeholder="Recipe title *" />
+                <textarea class="form-control" @bind="_newDescription" placeholder="Short description" rows="2"></textarea>
+
+                <div class="rcp-form-row">
+                    <input class="form-control" type="number" @bind="_newServings" placeholder="Servings" min="1" />
+                    <input class="form-control" type="number" @bind="_newPrepTime" placeholder="Prep (min)" min="0" />
+                    <input class="form-control" type="number" @bind="_newCookTime" placeholder="Cook (min)" min="0" />
+                </div>
+
+                <h4>Ingredients</h4>
+                @foreach (var ing in _newIngredients)
+                {
+                    <div class="rcp-ing-row">
+                        <input class="form-control" @bind="ing.Name" placeholder="Ingredient" />
+                        <input class="form-control rcp-ing-qty" @bind="ing.Quantity" placeholder="Qty" />
+                        <input class="form-control rcp-ing-unit" @bind="ing.Unit" placeholder="Unit" />
+                        <button class="rcp-delete" @onclick="() => _newIngredients.Remove(ing)">✕</button>
+                    </div>
+                }
+                <button class="btn btn-outline-secondary btn-sm" @onclick="AddIngredientRow">＋ Ingredient</button>
+
+                <textarea class="form-control mt-2" @bind="_newInstructions" placeholder="Instructions / method" rows="4"></textarea>
+
+                <button class="btn btn-primary mt-2" @onclick="SaveRecipe" disabled="@(string.IsNullOrWhiteSpace(_newTitle) || _saving)">
+                    @if (_saving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status" />
+                    }
+                    Save Recipe
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <div class="rcp-loading"><span class="spinner-border text-primary" role="status" /></div>
+    }
+    else if (_recipes.Count == 0 && !_showForm)
+    {
+        <div class="rcp-empty">
+            <span class="rcp-empty-icon">👨‍🍳</span>
+            <p>No recipes yet — add your first one!</p>
+        </div>
+    }
+    else
+    {
+        <div class="rcp-grid">
+            @foreach (var recipe in _recipes)
+            {
+                <div class="rcp-card @(_expandedId == recipe.Id ? "rcp-expanded" : "")" @onclick="() => ToggleExpand(recipe.Id)">
+                    <div class="rcp-card-top">
+                        <h3>@recipe.Title</h3>
+                        @if (!string.IsNullOrWhiteSpace(recipe.Description))
+                        {
+                            <p class="rcp-card-desc">@recipe.Description</p>
+                        }
+                        <div class="rcp-meta">
+                            @if (recipe.Servings.HasValue) { <span>🍽 @recipe.Servings</span> }
+                            @if (recipe.PrepTimeMinutes.HasValue) { <span>⏱ @(recipe.PrepTimeMinutes)m prep</span> }
+                            @if (recipe.CookTimeMinutes.HasValue) { <span>🔥 @(recipe.CookTimeMinutes)m cook</span> }
+                        </div>
+                    </div>
+
+                    @if (_expandedId == recipe.Id)
+                    {
+                        <div class="rcp-detail" @onclick:stopPropagation="true">
+                            @if (_expandedIngredients.Any())
+                            {
+                                <h4>Ingredients</h4>
+                                <ul class="rcp-ing-list">
+                                    @foreach (var ing in _expandedIngredients)
+                                    {
+                                        <li>
+                                            @if (!string.IsNullOrWhiteSpace(ing.Quantity)) { <strong>@ing.Quantity</strong> }
+                                            @if (!string.IsNullOrWhiteSpace(ing.Unit)) { <span>@ing.Unit</span> }
+                                            @ing.Name
+                                        </li>
+                                    }
+                                </ul>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(recipe.Instructions))
+                            {
+                                <h4>Method</h4>
+                                <p class="rcp-instructions">@recipe.Instructions</p>
+                            }
+
+                            <button class="btn btn-outline-secondary btn-sm mt-2" style="color: var(--danger); border-color: var(--danger);"
+                                    @onclick="() => DeleteRecipe(recipe)">
+                                Delete Recipe
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Recipe> _recipes = [];
+    private List<RecipeIngredient> _expandedIngredients = [];
+    private string? _expandedId;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _showForm;
+    private string? _errorMessage;
+
+    // Form fields
+    private string _newTitle = string.Empty;
+    private string? _newDescription;
+    private int? _newServings;
+    private int? _newPrepTime;
+    private int? _newCookTime;
+    private string? _newInstructions;
+    private List<IngredientRow> _newIngredients = [new()];
+
+    private class IngredientRow
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Quantity { get; set; }
+        public string? Unit { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { _recipes = await Supabase.GetRecipesAsync(); }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _loading = false; }
+    }
+
+    private void AddIngredientRow() => _newIngredients.Add(new());
+
+    private async Task SaveRecipe()
+    {
+        if (string.IsNullOrWhiteSpace(_newTitle)) return;
+        _saving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var recipe = new Recipe
+            {
+                Title = _newTitle.Trim(),
+                Description = _newDescription?.Trim(),
+                Servings = _newServings,
+                PrepTimeMinutes = _newPrepTime,
+                CookTimeMinutes = _newCookTime,
+                Instructions = _newInstructions?.Trim()
+            };
+
+            var saved = await Supabase.AddRecipeAsync(recipe);
+            if (saved is not null)
+            {
+                int order = 0;
+                foreach (var ing in _newIngredients.Where(i => !string.IsNullOrWhiteSpace(i.Name)))
+                {
+                    await Supabase.AddRecipeIngredientAsync(new RecipeIngredient
+                    {
+                        RecipeId = saved.Id,
+                        Name = ing.Name.Trim(),
+                        Quantity = ing.Quantity?.Trim(),
+                        Unit = ing.Unit?.Trim(),
+                        SortOrder = order++
+                    });
+                }
+
+                _recipes.Insert(0, saved);
+                ResetForm();
+            }
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+        finally { _saving = false; }
+    }
+
+    private void ResetForm()
+    {
+        _showForm = false;
+        _newTitle = string.Empty;
+        _newDescription = null;
+        _newServings = null;
+        _newPrepTime = null;
+        _newCookTime = null;
+        _newInstructions = null;
+        _newIngredients = [new()];
+    }
+
+    private async Task ToggleExpand(string id)
+    {
+        if (_expandedId == id)
+        {
+            _expandedId = null;
+            _expandedIngredients.Clear();
+            return;
+        }
+
+        _expandedId = id;
+        try { _expandedIngredients = await Supabase.GetRecipeIngredientsAsync(id); }
+        catch { _expandedIngredients = []; }
+    }
+
+    private async Task DeleteRecipe(Recipe recipe)
+    {
+        try
+        {
+            await Supabase.DeleteRecipeAsync(recipe);
+            _recipes.Remove(recipe);
+            if (_expandedId == recipe.Id) _expandedId = null;
+        }
+        catch (Exception ex) { _errorMessage = ex.Message; }
+    }
+}
