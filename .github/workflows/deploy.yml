@@ -1,0 +1,35 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-to-github-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x' # Perfect for .NET 10
+
+      - name: Publish Build Assets
+        run: dotnet publish -c Release -o release
+
+      # Since you already set base href to /NineWest/ in your code, 
+      # we skip the 'sed' command to avoid making it /NineWest/NineWest/
+      
+      - name: Add .nojekyll file
+        run: touch release/wwwroot/.nojekyll
+
+      # This creates the 404 hack so refreshes work
+      - name: Create 404 page
+        run: cp release/wwwroot/index.html release/wwwroot/404.html
+
+      - name: Upload to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: release/wwwroot
+          branch: gh-pages # This is the branch GitHub will actually serve from
